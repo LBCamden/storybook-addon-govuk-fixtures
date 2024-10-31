@@ -1,9 +1,9 @@
 import * as yaml from 'yaml'
 import * as path from 'path'
 import * as fs from 'fs/promises'
-import { camelCase } from 'lodash-es'
+import { ComponentSpec } from './types'
 
-export async function loadFixture(code: string, id: string) {
+export async function loadComponentSpec(code: string, id: string): Promise<ComponentSpec> {
   if (id.endsWith('.yaml')) {
     return {
       ...yaml.parse(code),
@@ -22,23 +22,4 @@ export async function loadFixture(code: string, id: string) {
       data: x.options
     }))
   }
-}
-
-export function generateStoryMetadata(id, prefix, { params, name }) {
-  return [
-    `export default {`,
-    `  title: ${JSON.stringify(path.posix.join(prefix, name))},`,
-    `}`
-  ]
-}
-
-export function generateStories({ examples }) {
-  return examples.flatMap(({ name, data }) => [
-    `export const _${camelCase(name)} = {`,
-    `  name: ${JSON.stringify(name)},`,
-    `  args: ${JSON.stringify(data)},`,
-    `  render: (_, { loaded }) => loaded.html,`,
-    `  loaders: [ async (cx) => ({ html: await render({ params: cx.args || cx.initialArgs }) }) ]`,
-    `}`
-  ])
 }

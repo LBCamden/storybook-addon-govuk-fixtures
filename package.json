@@ -6,6 +6,12 @@
       "import": "./dist/preset.js",
       "require": "./dist/preset.cjs"
     },
+    "./_docs": {
+      "import": "./dist/docs/preview-annotations.js"
+    },
+    "./_runtime": {
+      "import": "./dist/runtime.js"
+    },
     ".": {
       "types": "./dist/index.d.mts",
       "import": "./dist/index.js",
@@ -23,17 +29,19 @@
     "vite-plugin-nunjucks-loader": "github:lbcamden/vite-plugin-nunjucks-loader"
   },
   "devDependencies": {
+    "@storybook/html": "^8.3.6",
     "@storybook/html-vite": "^8.3.6",
     "@types/lodash-es": "^4.17.12",
     "escape-string-regexp": "^5.0.0",
-    "glob": "^11.0.0",
     "lodash-es": "^4.17.21",
     "pkgroll": "^2.5.1",
+    "prettier": "^3.3.3",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3",
     "yaml": "^2.6.0"
   },
   "peerDependencies": {
+    "@storybook/html": "^8.3.6",
     "storybook": "^8.3.6",
     "vite": "^5.4.10"
   }

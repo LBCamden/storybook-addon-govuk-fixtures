@@ -6883,6 +6883,25 @@ function parse(src, reviver, options) {
     return doc.toJS(Object.assign({ reviver: _reviver }, options));
 }
 
+async function loadComponentSpec(code, id) {
+  if (id.endsWith(".yaml")) {
+    return {
+      ...parse(code),
+      name: path__namespace.basename(path__namespace.dirname(id))
+    };
+  }
+  const macroOpts = JSON.parse(await fs__namespace.readFile(path__namespace.join(path__namespace.dirname(id), "macro-options.json"), "utf-8"));
+  const { fixtures } = JSON.parse(await fs__namespace.readFile(id, "utf-8"));
+  return {
+    name: path__namespace.basename(path__namespace.dirname(id)),
+    params: macroOpts,
+    examples: fixtures.map((x) => ({
+      ...x,
+      data: x.options
+    }))
+  };
+}
+
 /** Detect free variable `global` from Node.js. */
 var freeGlobal = typeof global == 'object' && global && global.Object === Object && global;
 
@@ -7646,52 +7665,20 @@ var camelCase = createCompounder(function(result, word, index) {
   return result + (index ? capitalize(word) : word);
 });
 
-async function loadFixture(code, id) {
-  if (id.endsWith(".yaml")) {
-    return {
-      ...parse(code),
-      name: path__namespace.basename(path__namespace.dirname(id))
-    };
-  }
-  const macroOpts = JSON.parse(await fs__namespace.readFile(path__namespace.join(path__namespace.dirname(id), "macro-options.json"), "utf-8"));
-  const { fixtures } = JSON.parse(await fs__namespace.readFile(id, "utf-8"));
-  return {
-    name: path__namespace.basename(path__namespace.dirname(id)),
-    params: macroOpts,
-    examples: fixtures.map((x) => ({
-      ...x,
-      data: x.options
-    }))
-  };
-}
-function generateStoryMetadata(id, prefix, { params, name }) {
-  return [
-    `export default {`,
-    `  title: ${JSON.stringify(path__namespace.posix.join(prefix, name))},`,
-    `}`
-  ];
-}
-function generateStories({ examples }) {
-  return examples.flatMap(({ name, data }) => [
-    `export const _${camelCase(name)} = {`,
-    `  name: ${JSON.stringify(name)},`,
-    `  args: ${JSON.stringify(data)},`,
-    `  render: (_, { loaded }) => loaded.html,`,
-    `  loaders: [ async (cx) => ({ html: await render({ params: cx.args || cx.initialArgs }) }) ]`,
-    `}`
-  ]);
-}
-
 function getExampleExportName(exampleName) {
   return "_" + camelCase(exampleName);
 }
+function pascalCase(str) {
+  str = camelCase(str);
+  return str[0].toUpperCase() + str.slice(1);
+}
 
-function fixtureIndexer({ prefix, searchPath }) {
+function fixtureIndexer({ storyNamespace: prefix, searchPath }) {
   const absPath = path__namespace.resolve(searchPath);
   return {
     test: new RegExp("^" + escapeStringRegexp(absPath)),
     createIndex: async (fileName, { makeTitle }) => {
-      const fixtures = await loadFixture(await fs__namespace.readFile(fileName, "utf-8"), fileName);
+      const fixtures = await loadComponentSpec(await fs__namespace.readFile(fileName, "utf-8"), fileName);
       const title = path__namespace.posix.join(prefix, fixtures.name);
       return fixtures.examples.filter((example) => !example.hidden).map((example) => ({
         type: "story",
@@ -7703,7 +7690,7 @@ function fixtureIndexer({ prefix, searchPath }) {
   };
 }
 
-function fixtureLoader({ include, exclude, prefix }) {
+function fixtureLoader({ include, exclude, prefix = "", nunjucksPrefix, importRelativePath }) {
   const filter = vite.createFilter(include, exclude);
   return {
     name: "vite-plugin-govuk-fixtures",
@@ -7711,11 +7698,28 @@ function fixtureLoader({ include, exclude, prefix }) {
       if (!filter(id) || !/\.(json|ya?ml)$/.test(id)) {
         return;
       }
-      const fixtures = await loadFixture(code, id);
+      const importPath = path__namespace.relative(
+        importRelativePath,
+        path__namespace.join(
+          path__namespace.dirname(id),
+          "macro.njk"
+        )
+      );
+      const componentSpec = await loadComponentSpec(code, id);
+      const storyParameters = {
+        importPath,
+        macroExport: nunjucksPrefix ? nunjucksPrefix + pascalCase(componentSpec.name) : camelCase(componentSpec.name)
+      };
       return [
         `import render from "./template.njk?import="`,
-        ...generateStoryMetadata(id, prefix, fixtures),
-        ...generateStories(fixtures)
+        `import { generateStory } from "/node_modules/storybook-addon-govuk-fixtures/dist/runtime.js"`,
+        `export default {`,
+        `  title: ${JSON.stringify(path__namespace.posix.join(prefix, componentSpec.name))},`,
+        `  parameters: ${JSON.stringify(storyParameters)}`,
+        `}`,
+        ...componentSpec.examples.flatMap(({ name, data }) => [
+          `export const ${getExampleExportName(name)} = generateStory(render, ${JSON.stringify({ name, data })})`
+        ])
       ].join("\n");
     }
   };
@@ -7723,18 +7727,21 @@ function fixtureLoader({ include, exclude, prefix }) {
 
 const viteFinal = (viteConf, opts) => {
   const nunjucksLoaderFixed = typeof nunjucksLoader === "function" ? nunjucksLoader : nunjucksLoader.default;
-  const allTemplates = [
-    ...opts.fixtures.map((f) => f.searchPath),
-    ...opts.additionalTemplatePaths ?? []
-  ];
   viteConf.plugins ||= [];
   viteConf.plugins.unshift(
     ...opts.fixtures.map((f) => fixtureLoader({
+      importRelativePath: f.searchPath,
       include: [f.searchPath + "/**"],
-      prefix: f.prefix
+      prefix: f.storyNamespace,
+      nunjucksPrefix: f.nunjucksPrefix
     })),
+    // Install the nunjucks template loader and configure it to bundle templates associated with our stories
+    // and any additional template search paths provided.
     nunjucksLoaderFixed({
-      templates: allTemplates
+      templates: [
+        ...opts.fixtures.map((f) => f.searchPath),
+        ...opts.additionalTemplatePaths ?? []
+      ]
     })
   );
   return viteConf;
@@ -7755,7 +7762,15 @@ const experimental_indexers = async (prev, opts) => {
     ...opts.fixtures.map((opts2) => fixtureIndexer(opts2))
   ];
 };
+const previewAnnotations = async (input = [], options) => {
+  const docsEnabled = Object.keys(await options.presets.apply("docs", {}, options)).length > 0;
+  return [
+    ...input,
+    ...docsEnabled ? [path__namespace.join(__dirname, "docs/preview-annotations.js")] : []
+  ];
+};
 
 exports.experimental_indexers = experimental_indexers;
+exports.previewAnnotations = previewAnnotations;
 exports.stories = stories;
 exports.viteFinal = viteFinal;
