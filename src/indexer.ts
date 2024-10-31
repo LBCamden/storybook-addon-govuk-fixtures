@@ -3,8 +3,8 @@ import * as path from 'path'
 import escapeRegexp from "escape-string-regexp"
 import * as fs from 'fs/promises'
 
-import { FixtureOpts } from "./types"
-import { loadComponentSpec } from "./load-fixtures"
+import { FixtureOpts, FullPageExample } from "./types"
+import { getExampleSpec, loadComponentSpec } from "./load-fixtures"
 import { getExampleExportName } from "./util"
 
 export function fixtureIndexer({ storyNamespace: prefix, searchPath }: FixtureOpts): Indexer {
@@ -22,6 +22,25 @@ export function fixtureIndexer({ storyNamespace: prefix, searchPath }: FixtureOp
         importPath: fileName,
         exportName: getExampleExportName(example.name)
       }))
+    }
+  }
+}
+
+export function fullPageExampleIndexer({ storyNamespace, searchPath }: FullPageExample): Indexer {
+  const absPath = path.resolve(searchPath);
+
+  return {
+    test: new RegExp('^' + escapeRegexp(absPath)),
+    createIndex: async (fileName, { makeTitle }) => {
+      const example = getExampleSpec(fileName, { searchPath, storyNamespace})
+
+      return [{
+        type: "story",
+        title: makeTitle(example.storyTitle),
+        importPath: fileName,
+        tags: ["!autodocs"],
+        exportName: 'DefaultExample'
+      }]
     }
   }
 }

@@ -5,33 +5,37 @@ import * as path from 'path'
 import type { InlineConfig } from 'vite'
 
 import { Opts } from './types'
-import { fixtureIndexer } from './indexer'
-import fixtureLoader from './vite-plugin'
+import { fixtureIndexer, fullPageExampleIndexer } from './indexer'
+import fixtureLoader, { fullPageExampleLoader } from './vite-plugin'
 
 /**
  * Preset hook to override vite configuration. We use it to inject the plugins that we need to transform yaml and json
  * fixtures into Storybook CSF-format js modules.
  **/
-export const viteFinal = (viteConf: InlineConfig, opts: Opts) => {
+export const viteFinal = (viteConf: InlineConfig, { fixtures, fullPageExamples = [], additionalTemplatePaths = [] }: Opts) => {
   // workaround for loader being in esm format
   const nunjucksLoaderFixed = typeof nunjucksLoader === 'function' ? nunjucksLoader : (nunjucksLoader as any).default
 
   viteConf.plugins ||= []
   viteConf.plugins.unshift(
       // Install a fixture-loader plugin for each fixture search path
-    ...opts.fixtures.map(f => fixtureLoader({
+    ...fixtures.map(f => fixtureLoader({
       importRelativePath: f.searchPath,
       include: [f.searchPath + '/**'],
       prefix: f.storyNamespace,
       nunjucksPrefix: f.nunjucksPrefix
     })),
 
+      // Install a plugin for each full page example search path
+    ...fullPageExamples.map(ex => fullPageExampleLoader(ex)),
+
     // Install the nunjucks template loader and configure it to bundle templates associated with our stories
     // and any additional template search paths provided.
     nunjucksLoaderFixed({
       templates: [
-        ...opts.fixtures.map(f => f.searchPath),
-        ...opts.additionalTemplatePaths ?? []
+        ...fixtures.map(f => f.searchPath),
+        ...fullPageExamples.map(f => f.searchPath),
+        ...additionalTemplatePaths ?? []
       ],
     }),
   );
@@ -51,6 +55,7 @@ export const stories: PresetPropertyFn<"stories", StorybookConfig, Opts> = async
 
   return [
     ...stories ?? [],
+    ...(opts.fullPageExamples ?? []).map(ex => `${path.resolve(ex.searchPath)}/*/example.yaml`),
     ...opts.fixtures.map(f =>
       f.type === 'yaml'
       // yaml fixture format
@@ -75,7 +80,8 @@ export const experimental_indexers: PresetPropertyFn<"experimental_indexers", St
   
   return [
     ...indexers ?? [],
-    ...opts.fixtures.map(opts => fixtureIndexer(opts))
+    ...opts.fixtures.map(opts => fixtureIndexer(opts)),
+    ...(opts.fullPageExamples ?? []).map(ex => fullPageExampleIndexer(ex))
   ]
 }
 

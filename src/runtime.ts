@@ -13,7 +13,6 @@ export function generateStory(renderFn: (args: any) => Promise<string>, { name, 
       // to render them asynchronously.
       async (cx) => {
         const rawStoryHtml = await renderFn({params: cx.args || cx.initialArgs})
-        console.log(cx.args, rawStoryHtml)
 
         // This is just to make code examples looks nicer. We'd ideally do this in the docs source transform,
         // but it doesn't support async transform functions.
@@ -22,6 +21,21 @@ export function generateStory(renderFn: (args: any) => Promise<string>, { name, 
             plugins: [prettierHtml],
             parser: "html"
           })
+        }
+      }
+    ]
+  }
+}
+
+export function generateFullPageExample(renderFn: (args: any) => Promise<string>): StoryObj {
+  return {
+    render: (_, { loaded }) => loaded.html,
+    loaders: [
+      // As our template rendering functions and prettier are async, we use storybook's "loader" feature
+      // to render them asynchronously.
+      async (cx) => {
+        return {
+          html: await renderFn({params: cx.args || cx.initialArgs})
         }
       }
     ]

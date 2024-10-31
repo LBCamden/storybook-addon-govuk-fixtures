@@ -1,8 +1,9 @@
-/** Add-on options passed into hooks in preset.ts by Storybook */
+/** Add-on options provided when setting up addon */
 interface Opts {
     /**  */
     fixtures: FixtureOpts[];
     additionalTemplatePaths?: string[];
+    fullPageExamples: FullPageExample[];
 }
 interface FixtureOpts {
     storyNamespace: string;
@@ -10,9 +11,14 @@ interface FixtureOpts {
     type?: "json" | "yaml";
     nunjucksPrefix?: string;
 }
+interface FullPageExample {
+    storyNamespace: string;
+    searchPath: string;
+}
 interface FixtureSpec {
     name: string;
     data: Record<string, unknown>;
+    hidden?: boolean;
 }
 interface ComponentSpec {
     name: string;
@@ -25,4 +31,4 @@ declare function govukStorybook(options: Opts): {
     options: Opts;
 };
 
-export { type ComponentSpec, type FixtureOpts, type FixtureSpec, type Opts, govukStorybook as default };
+export { type ComponentSpec, type FixtureOpts, type FixtureSpec, type FullPageExample, type Opts, govukStorybook as default };

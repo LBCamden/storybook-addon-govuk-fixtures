@@ -1,19 +1,20 @@
 import { createFilter, FilterPattern, Plugin, fetchModule } from 'vite';
 import * as path from 'path'
 
-import { loadComponentSpec } from './load-fixtures';
-import { getExampleExportName, pascalCase } from './util';
+import { getExampleSpec, loadComponentSpec } from './load-fixtures';
+import { fileExists, getExampleExportName, pascalCase } from './util';
 import { camelCase } from 'lodash-es';
+import { FullPageExample } from './types';
 
-interface LoaderOpts {
+interface FixtureLoaderOpts {
   importRelativePath: string,
   prefix?: string;
   nunjucksPrefix?: string
   include?: FilterPattern;
   exclude?: FilterPattern;
-};
+}
 
-export default function fixtureLoader({ include, exclude, prefix = "", nunjucksPrefix, importRelativePath }: LoaderOpts): Plugin {
+export default function fixtureLoader({ include, exclude, prefix = "", nunjucksPrefix, importRelativePath }: FixtureLoaderOpts): Plugin {
   const filter = createFilter(include, exclude);
 
   return {
@@ -52,6 +53,39 @@ export default function fixtureLoader({ include, exclude, prefix = "", nunjucksP
         ...componentSpec.examples.flatMap(({ name, data }) => [
           `export const ${getExampleExportName(name)} = generateStory(render, ${JSON.stringify({ name, data })})`
         ])
+      ].join('\n')
+    }
+  }
+}
+
+interface FullPageExampleLoaderOpts extends FullPageExample {
+}
+
+export function fullPageExampleLoader({ storyNamespace = '', searchPath }: FullPageExampleLoaderOpts): Plugin {
+  const filter = createFilter([searchPath + '/*/example.yaml'], [])
+  return {
+    name: "vite-plugin-govuk-examples",
+
+    async load(id) {
+      if (!filter(id)) return
+      
+      const example = getExampleSpec(id, { searchPath, storyNamespace })
+
+      const storyMeta = {
+        title: example.storyTitle,
+        tags: ["!autodocs"],
+        parameters: {
+          layout: "fullscreen"
+        }
+      }
+
+      return [
+        ...await example.hasStyle() ? [`import ${JSON.stringify(example.stylePath)}`] : [],
+        `import render from "${example.mainTemplate}?import="`,
+        `import { generateFullPageExample } from "/node_modules/storybook-addon-govuk-fixtures/dist/runtime.js"`,
+        '',
+        `export default ${JSON.stringify(storyMeta)}`,
+        'export const DefaultExample = generateFullPageExample(render)',
       ].join('\n')
     }
   }

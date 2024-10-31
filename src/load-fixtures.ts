@@ -1,7 +1,11 @@
 import * as yaml from 'yaml'
 import * as path from 'path'
 import * as fs from 'fs/promises'
-import { ComponentSpec } from './types'
+import { readFile } from 'fs/promises'
+import { uniqBy } from 'lodash-es'
+
+import { ComponentSpec, FixtureSpec, FullPageExample } from './types'
+import { fileExists } from './util'
 
 export async function loadComponentSpec(code: string, id: string): Promise<ComponentSpec> {
   if (id.endsWith('.yaml')) {
@@ -17,9 +21,32 @@ export async function loadComponentSpec(code: string, id: string): Promise<Compo
   return {
     name: path.basename(path.dirname(id)),
     params: macroOpts,
-    examples: fixtures.map(x => ({
-      ...x,
-      data: x.options
-    }))
+    examples: uniqBy(
+      fixtures.map((x): FixtureSpec => ({
+        ...x,
+        data: x.options
+      })),
+      x => x.name
+    )
+  }
+}
+
+export function getExampleSpec(exampleYamlPath: string, { storyNamespace }: FullPageExample) {
+  const exampleDir = path.dirname(exampleYamlPath)
+  const stylePath = path.join(exampleDir, 'style.scss')
+  const mainTemplate = path.join(exampleDir, 'index.njk')
+  const storyTitle = path.posix.join(storyNamespace, path.basename(exampleDir));
+
+  return {
+    mainTemplate,
+    storyTitle,
+    stylePath,
+    hasStyle() {
+      return fileExists(stylePath)
+    },
+    async getData() {
+      const {data = {}} = yaml.parse(await readFile(exampleYamlPath, 'utf-8'))
+      return data
+    }
   }
 }

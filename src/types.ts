@@ -1,8 +1,10 @@
-/** Add-on options passed into hooks in preset.ts by Storybook */
+/** Add-on options provided when setting up addon */
 export interface Opts {
   /**  */
   fixtures: FixtureOpts[]
   additionalTemplatePaths?: string[]
+
+  fullPageExamples: FullPageExample[],
 }
 
 export interface FixtureOpts {
@@ -12,10 +14,15 @@ export interface FixtureOpts {
   nunjucksPrefix?: string
 }
 
+export interface FullPageExample {
+  storyNamespace: string,
+  searchPath: string,
+}
 
 export interface FixtureSpec {
   name: string
   data: Record<string, unknown>
+  hidden?: boolean
 }
 
 export interface ComponentSpec {

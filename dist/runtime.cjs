@@ -69,7 +69,6 @@ function generateStory(renderFn, { name, data }) {
       // to render them asynchronously.
       async (cx) => {
         const rawStoryHtml = await renderFn({ params: cx.args || cx.initialArgs });
-        console.log(cx.args, rawStoryHtml);
         return {
           html: await gu(rawStoryHtml, {
             plugins: [Ih],
@@ -80,5 +79,20 @@ function generateStory(renderFn, { name, data }) {
     ]
   };
 }
+function generateFullPageExample(renderFn) {
+  return {
+    render: (_, { loaded }) => loaded.html,
+    loaders: [
+      // As our template rendering functions and prettier are async, we use storybook's "loader" feature
+      // to render them asynchronously.
+      async (cx) => {
+        return {
+          html: await renderFn({ params: cx.args || cx.initialArgs })
+        };
+      }
+    ]
+  };
+}
 
+exports.generateFullPageExample = generateFullPageExample;
 exports.generateStory = generateStory;
