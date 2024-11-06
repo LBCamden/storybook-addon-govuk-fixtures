@@ -12,9 +12,10 @@ interface FixtureLoaderOpts {
   nunjucksPrefix?: string
   include?: FilterPattern;
   exclude?: FilterPattern;
+  resolveTemplate?: (name: string) => string
 }
 
-export default function fixtureLoader({ include, exclude, prefix = "", nunjucksPrefix, importRelativePath }: FixtureLoaderOpts): Plugin {
+export default function fixtureLoader({ resolveTemplate, include, exclude, prefix = "", nunjucksPrefix, importRelativePath }: FixtureLoaderOpts): Plugin {
   const filter = createFilter(include, exclude);
 
   return {
@@ -41,8 +42,10 @@ export default function fixtureLoader({ include, exclude, prefix = "", nunjucksP
         : camelCase(componentSpec.name)
       }
 
+      const templatePath = resolveTemplate ? path.resolve(resolveTemplate(componentSpec.name)) : `./template.njk`
+
       return [
-        `import render from "./template.njk?import="`,
+        `import render from "${templatePath}?import="`,
         `import { generateStory } from "/node_modules/storybook-addon-govuk-fixtures/dist/runtime.js"`,
         
         `export default {`,

@@ -10288,7 +10288,7 @@ function fullPageExampleIndexer({ storyNamespace, searchPath }) {
   };
 }
 
-function fixtureLoader({ include, exclude, prefix = "", nunjucksPrefix, importRelativePath }) {
+function fixtureLoader({ resolveTemplate, include, exclude, prefix = "", nunjucksPrefix, importRelativePath }) {
   const filter = createFilter(include, exclude);
   return {
     name: "vite-plugin-govuk-fixtures",
@@ -10308,8 +10308,9 @@ function fixtureLoader({ include, exclude, prefix = "", nunjucksPrefix, importRe
         importPath,
         macroExport: nunjucksPrefix ? nunjucksPrefix + pascalCase(componentSpec.name) : camelCase(componentSpec.name)
       };
+      const templatePath = resolveTemplate ? path.resolve(resolveTemplate(componentSpec.name)) : `./template.njk`;
       return [
-        `import render from "./template.njk?import="`,
+        `import render from "${templatePath}?import="`,
         `import { generateStory } from "/node_modules/storybook-addon-govuk-fixtures/dist/runtime.js"`,
         `export default {`,
         `  title: ${JSON.stringify(path.posix.join(prefix, componentSpec.name))},`,
@@ -10356,7 +10357,8 @@ const viteFinal = (viteConf, { fixtures, fullPageExamples = [], additionalTempla
       importRelativePath: f.searchPath,
       include: [f.searchPath + "/**"],
       prefix: f.storyNamespace,
-      nunjucksPrefix: f.nunjucksPrefix
+      nunjucksPrefix: f.nunjucksPrefix,
+      resolveTemplate: f.resolveTemplate
     })),
     ...fullPageExamples.map((ex) => fullPageExampleLoader(ex)),
     // Install the nunjucks template loader and configure it to bundle templates associated with our stories
@@ -10375,10 +10377,10 @@ const stories = async (prev, opts) => {
   const stories2 = typeof prev === "function" ? await prev([], opts) : prev;
   return [
     ...stories2 ?? [],
-    ...(opts.fullPageExamples ?? []).map((ex) => `${path.resolve(ex.searchPath)}/*/example.yaml`),
     ...opts.fixtures.map(
       (f) => f.type === "yaml" ? `${path.resolve(f.searchPath)}/**/*.yaml` : `${path.resolve(f.searchPath)}/**/fixtures.json`
-    )
+    ),
+    ...(opts.fullPageExamples ?? []).map((ex) => `${path.resolve(ex.searchPath)}/*/example.yaml`)
   ];
 };
 const experimental_indexers = async (prev, opts) => {

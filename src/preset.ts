@@ -23,7 +23,8 @@ export const viteFinal = (viteConf: InlineConfig, { fixtures, fullPageExamples =
       importRelativePath: f.searchPath,
       include: [f.searchPath + '/**'],
       prefix: f.storyNamespace,
-      nunjucksPrefix: f.nunjucksPrefix
+      nunjucksPrefix: f.nunjucksPrefix,
+      resolveTemplate: f.resolveTemplate
     })),
 
       // Install a plugin for each full page example search path
@@ -55,14 +56,14 @@ export const stories: PresetPropertyFn<"stories", StorybookConfig, Opts> = async
 
   return [
     ...stories ?? [],
-    ...(opts.fullPageExamples ?? []).map(ex => `${path.resolve(ex.searchPath)}/*/example.yaml`),
     ...opts.fixtures.map(f =>
       f.type === 'yaml'
       // yaml fixture format
       ? `${path.resolve(f.searchPath)}/**/*.yaml`
       // govuk-prototype-kit json format
       : `${path.resolve(f.searchPath)}/**/fixtures.json`,
-    )
+    ),
+    ...(opts.fullPageExamples ?? []).map(ex => `${path.resolve(ex.searchPath)}/*/example.yaml`),
   ]
 }
 

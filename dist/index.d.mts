@@ -10,6 +10,7 @@ interface FixtureOpts {
     searchPath: string;
     type?: "json" | "yaml";
     nunjucksPrefix?: string;
+    resolveTemplate?: (name: string) => string;
 }
 interface FullPageExample {
     storyNamespace: string;
