@@ -6,10 +6,10 @@
       "import": "./dist/preset.js",
       "require": "./dist/preset.cjs"
     },
-    "./_docs": {
+    "./dist/docs/preview-annotations.js": {
       "import": "./dist/docs/preview-annotations.js"
     },
-    "./_runtime": {
+    "./dist/runtime.js": {
       "import": "./dist/runtime.js"
     },
     ".": {
