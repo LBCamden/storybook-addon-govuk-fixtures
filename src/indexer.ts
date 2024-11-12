@@ -39,7 +39,7 @@ export function fullPageExampleIndexer({ storyNamespace, searchPath }: FullPageE
         title: makeTitle(example.storyTitle),
         importPath: fileName,
         tags: ["!autodocs"],
-        exportName: 'DefaultExample'
+        exportName: 'DefaultExample',
       }]
     }
   }
