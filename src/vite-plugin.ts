@@ -1,21 +1,38 @@
 import { createFilter, FilterPattern, Plugin, fetchModule } from 'vite';
 import * as path from 'path'
 
-import { getExampleSpec, loadComponentSpec } from './load-fixtures';
+import { getFullPageExampleSpec, loadComponentSpec } from './load-fixtures';
 import { fileExists, getExampleExportName, pascalCase } from './util';
 import { camelCase } from 'lodash-es';
 import { FullPageExample } from './types';
 
 interface FixtureLoaderOpts {
-  importRelativePath: string,
-  prefix?: string;
-  nunjucksPrefix?: string
+  /** Path to prefix macro imports in documentation with */
+  docsImportPath: string,
+
+  /** Prefix to append to name of story. This is slash-delimited (eg: 'category/subcategory') and used to group stories into categories */
+  storyNamePrefix?: string;
+
+  /** Prefix (eg "LBCamden" or "govuk") to add to component names when generating nunjucks documentation */
+  docsNunjucksPrefix?: string
+
+  /** Path patterns to include in plugin */
   include?: FilterPattern;
+
+  /** Path patterns to exclude from plugin */
   exclude?: FilterPattern;
+
+  /**
+   * Given the name of a directory containing fixture examples, return the path (relative to cwd) of the template.njk
+   * file implementing the component. Defaults to a template.njk file in the same directory.
+   */
   resolveTemplate?: (name: string) => string
 }
 
-export default function fixtureLoader({ resolveTemplate, include, exclude, prefix = "", nunjucksPrefix, importRelativePath }: FixtureLoaderOpts): Plugin {
+/**
+ * Vite plugin that transforms json or yaml files containing a description of a component's properties and examples into a [CSF](https://storybook.js.org/docs/api/csf) format javascript file.
+ */
+export default function fixtureLoader({ resolveTemplate, include, exclude, storyNamePrefix = "", docsNunjucksPrefix, docsImportPath }: FixtureLoaderOpts): Plugin {
   const filter = createFilter(include, exclude);
 
   return {
@@ -27,7 +44,7 @@ export default function fixtureLoader({ resolveTemplate, include, exclude, prefi
       }
 
       const importPath = path.relative(
-        importRelativePath,
+        docsImportPath,
         path.join(
           path.dirname(id),
           'macro.njk'
@@ -35,10 +52,12 @@ export default function fixtureLoader({ resolveTemplate, include, exclude, prefi
       )
 
       const componentSpec = await loadComponentSpec(code, id)
+
+      // Passed into story and used when generating nunjucks documentation
       const storyParameters = {
         importPath,
-        macroExport: nunjucksPrefix
-        ? nunjucksPrefix + pascalCase(componentSpec.name)
+        macroExport: docsNunjucksPrefix
+        ? docsNunjucksPrefix + pascalCase(componentSpec.name)
         : camelCase(componentSpec.name)
       }
 
@@ -49,7 +68,7 @@ export default function fixtureLoader({ resolveTemplate, include, exclude, prefi
         `import { generateStory } from "/node_modules/storybook-addon-govuk-fixtures/dist/runtime.js"`,
         
         `export default {`,
-        `  title: ${JSON.stringify(path.posix.join(prefix, componentSpec.name))},`,
+        `  title: ${JSON.stringify(path.posix.join(storyNamePrefix, componentSpec.name))},`,
         `  parameters: ${JSON.stringify(storyParameters)}`,
         `}`,
 
@@ -64,6 +83,9 @@ export default function fixtureLoader({ resolveTemplate, include, exclude, prefi
 interface FullPageExampleLoaderOpts extends FullPageExample {
 }
 
+/**
+ * Vite plugin that transforms nunjucks files providing full page or pattern examples into a [CSF](https://storybook.js.org/docs/api/csf) format javascript file.
+ */
 export function fullPageExampleLoader({ storyNamespace = '', searchPath }: FullPageExampleLoaderOpts): Plugin {
   const filter = createFilter([searchPath + '/*/example.yaml'], [])
   return {
@@ -72,7 +94,7 @@ export function fullPageExampleLoader({ storyNamespace = '', searchPath }: FullP
     async load(id) {
       if (!filter(id)) return
       
-      const example = getExampleSpec(id, { searchPath, storyNamespace })
+      const example = getFullPageExampleSpec(id, { searchPath, storyNamespace })
 
       const storyMeta = {
         title: example.storyTitle,

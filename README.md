@@ -87,3 +87,36 @@ const config = {
   ]
 };
 ```
+
+## Development
+
+If you're making changes to this library, you'll probably want to test it against a downstream project containing component fixtures.
+
+Use npm link to do this.
+
+In this project's repository, run:
+
+```bash
+npm link
+```
+
+In the downstream repository, run:
+
+```bash
+npm link storybook-addon-govuk-fixtures
+```
+
+You will need to `npm run build` in this repository and restart your downstream storybook for changes to take effect.
+
+## Publishing changes
+
+As this library is currently hosted on github, you'll need to rebuild it and commit the built assets for them to be available downstream.
+
+You can do this by running:
+
+```bash
+npm run build
+git add -A
+git commit -m "release"
+git push origin main
+```

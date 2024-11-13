@@ -7,6 +7,9 @@ import { uniqBy } from 'lodash-es'
 import { ComponentSpec, FixtureSpec, FullPageExample } from './types'
 import { fileExists } from './util'
 
+/**
+ * Parse the raw yaml or json of a fixtures file into a `ComponentSpec`.
+ */
 export async function loadComponentSpec(code: string, id: string): Promise<ComponentSpec> {
   if (id.endsWith('.yaml')) {
     return {
@@ -22,7 +25,7 @@ export async function loadComponentSpec(code: string, id: string): Promise<Compo
     name: path.basename(path.dirname(id)),
     params: macroOpts,
     examples: uniqBy(
-      fixtures.map((x): FixtureSpec => ({
+      fixtures.map((x: any): FixtureSpec => ({
         ...x,
         data: x.options
       })),
@@ -31,7 +34,11 @@ export async function loadComponentSpec(code: string, id: string): Promise<Compo
   }
 }
 
-export function getExampleSpec(exampleYamlPath: string, { storyNamespace }: FullPageExample) {
+/**
+ * Given the path to the example.yaml of a standlone example and the relevant config options, return an object that
+ * containing the data needed to render it.
+ */
+export function getFullPageExampleSpec(exampleYamlPath: string, { storyNamespace }: FullPageExample) {
   const exampleDir = path.dirname(exampleYamlPath)
   const stylePath = path.join(exampleDir, 'style.scss')
   const mainTemplate = path.join(exampleDir, 'index.njk')

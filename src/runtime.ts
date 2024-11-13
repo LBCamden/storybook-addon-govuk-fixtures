@@ -3,6 +3,9 @@ import prettierHtml from 'prettier/plugins/html'
 import * as prettier from 'prettier/standalone'
 import { FixtureSpec } from "./types";
 
+/**
+ * Returns a CSF-format story object for a single fixture defined on a component.
+ */
 export function generateStory(renderFn: (args: any) => Promise<string>, { name, data }: FixtureSpec): StoryObj {
   return {
     name,
@@ -27,6 +30,9 @@ export function generateStory(renderFn: (args: any) => Promise<string>, { name, 
   }
 }
 
+/**
+ * Returns a CSF-format story object for a single standalone example.
+ */
 export function generateFullPageExample(renderFn: (args: any) => Promise<string>): StoryObj {
   return {
     render: (_, { loaded }) => loaded.html,

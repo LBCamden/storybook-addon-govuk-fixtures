@@ -1,6 +1,9 @@
 import { GlobalTypes } from "storybook/internal/types";
 import { docsTransformSource } from "./docs-transform";
 
+/**
+ Additional parameters to inject into the frontend storybook context 
+*/
 export const parameters = {
   docs: {
     source: {
@@ -9,7 +12,11 @@ export const parameters = {
   }
 }
 
+/**
+ Additional globals to inject into the frontend storybook context
+*/
 export const globalTypes: GlobalTypes = {
+  // This is used to toggle between languages for code examples.
   sourceLanguage: {
     description: "Language to use in source code examples",
     toolbar: {
@@ -23,8 +30,9 @@ export const globalTypes: GlobalTypes = {
   }
 }
 
+/**
+ Default values for globals injected into the frontend storybook context.
+*/
 export const initialGlobals = {
   sourceLanguage: "nunjucks"
 }
-
-console.log('init preview')

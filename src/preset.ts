@@ -20,10 +20,10 @@ export const viteFinal = (viteConf: InlineConfig, { fixtures, fullPageExamples =
   viteConf.plugins.unshift(
       // Install a fixture-loader plugin for each fixture search path
     ...fixtures.map(f => fixtureLoader({
-      importRelativePath: f.searchPath,
+      docsImportPath: f.searchPath,
       include: [f.searchPath + '/**'],
-      prefix: f.storyNamespace,
-      nunjucksPrefix: f.nunjucksPrefix,
+      storyNamePrefix: f.storyNamespace,
+      docsNunjucksPrefix: f.nunjucksPrefix,
       resolveTemplate: f.resolveTemplate
     })),
 
@@ -72,7 +72,8 @@ export const stories: PresetPropertyFn<"stories", StorybookConfig, Opts> = async
  * Preset hook to override the story indexer.
  * 
  * By default storybook's server process will only parse and index stories from a CSF file with the name
- * `*.stories.(j|t)sx?`. We use this to index our stories using the.
+ * `*.stories.(j|t)sx?`. As our stories are defined in yaml or json files, we need to read the list of stories from
+ * them and provide them to storybook explicitly so that it can populate the sidebar and support search.
  * 
  * Given that this hook is experimental, if an upgrade to storybook breaks things, it's probably a good place to look...
  **/

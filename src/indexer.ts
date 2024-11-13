@@ -4,9 +4,12 @@ import escapeRegexp from "escape-string-regexp"
 import * as fs from 'fs/promises'
 
 import { FixtureOpts, FullPageExample } from "./types"
-import { getExampleSpec, loadComponentSpec } from "./load-fixtures"
+import { getFullPageExampleSpec, loadComponentSpec } from "./load-fixtures"
 import { getExampleExportName } from "./util"
 
+/**
+ * Return a Storybook indexer object for component fixtures
+ */
 export function fixtureIndexer({ storyNamespace: prefix, searchPath }: FixtureOpts): Indexer {
   const absPath = path.resolve(searchPath);
 
@@ -26,13 +29,16 @@ export function fixtureIndexer({ storyNamespace: prefix, searchPath }: FixtureOp
   }
 }
 
+/**
+ * Return a Storybook indexer object for standalone examples
+ */
 export function fullPageExampleIndexer({ storyNamespace, searchPath }: FullPageExample): Indexer {
   const absPath = path.resolve(searchPath);
 
   return {
     test: new RegExp('^' + escapeRegexp(absPath)),
     createIndex: async (fileName, { makeTitle }) => {
-      const example = getExampleSpec(fileName, { searchPath, storyNamespace})
+      const example = getFullPageExampleSpec(fileName, { searchPath, storyNamespace})
 
       return [{
         type: "story",
