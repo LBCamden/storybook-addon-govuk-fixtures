@@ -6,7 +6,7 @@ function docsTransformSource(code, ctx) {
       return [
         `{% from ${JSON.stringify(importPath)} import ${macroExport} %}`,
         "",
-        `${macroExport}(${JSON.stringify(ctx.args, null, 2)})`
+        `{{ ${macroExport}(${JSON.stringify(ctx.args, null, 2)}) }}`
       ].join("\n");
     }
   }
@@ -20,6 +20,7 @@ const parameters = {
   }
 };
 const globalTypes = {
+  // This is used to toggle between languages for code examples.
   sourceLanguage: {
     description: "Language to use in source code examples",
     toolbar: {
@@ -35,6 +36,5 @@ const globalTypes = {
 const initialGlobals = {
   sourceLanguage: "nunjucks"
 };
-console.log("init preview");
 
 export { globalTypes, initialGlobals, parameters };

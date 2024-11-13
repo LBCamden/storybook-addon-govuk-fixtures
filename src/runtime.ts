@@ -33,7 +33,7 @@ export function generateStory(renderFn: (args: any) => Promise<string>, { name, 
 /**
  * Returns a CSF-format story object for a single standalone example.
  */
-export function generateFullPageExample(renderFn: (args: any) => Promise<string>): StoryObj {
+export function generateStandaloneExample(renderFn: (args: any) => Promise<string>): StoryObj {
   return {
     render: (_, { loaded }) => loaded.html,
     loaders: [

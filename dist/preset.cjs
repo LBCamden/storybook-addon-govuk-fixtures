@@ -10257,7 +10257,7 @@ async function loadComponentSpec(code, id) {
     )
   };
 }
-function getExampleSpec(exampleYamlPath, { storyNamespace }) {
+function getStandaloneExampleSpec(exampleYamlPath, { storyNamespace }) {
   const exampleDir = path__namespace.dirname(exampleYamlPath);
   const stylePath = path__namespace.join(exampleDir, "style.scss");
   const mainTemplate = path__namespace.join(exampleDir, "index.njk");
@@ -10292,12 +10292,12 @@ function fixtureIndexer({ storyNamespace: prefix, searchPath }) {
     }
   };
 }
-function fullPageExampleIndexer({ storyNamespace, searchPath }) {
+function standaloneExampleIndexer({ storyNamespace, searchPath }) {
   const absPath = path__namespace.resolve(searchPath);
   return {
     test: new RegExp("^" + escapeStringRegexp(absPath)),
     createIndex: async (fileName, { makeTitle }) => {
-      const example = getExampleSpec(fileName, { searchPath, storyNamespace });
+      const example = getStandaloneExampleSpec(fileName, { searchPath, storyNamespace });
       return [{
         type: "story",
         title: makeTitle(example.storyTitle),
@@ -10309,7 +10309,7 @@ function fullPageExampleIndexer({ storyNamespace, searchPath }) {
   };
 }
 
-function fixtureLoader({ resolveTemplate, include, exclude, prefix = "", nunjucksPrefix, importRelativePath }) {
+function fixtureLoader({ resolveTemplate, include, exclude, storyNamePrefix = "", docsNunjucksPrefix, docsImportPath }) {
   const filter = vite.createFilter(include, exclude);
   return {
     name: "vite-plugin-govuk-fixtures",
@@ -10318,7 +10318,7 @@ function fixtureLoader({ resolveTemplate, include, exclude, prefix = "", nunjuck
         return;
       }
       const importPath = path__namespace.relative(
-        importRelativePath,
+        docsImportPath,
         path__namespace.join(
           path__namespace.dirname(id),
           "macro.njk"
@@ -10327,14 +10327,14 @@ function fixtureLoader({ resolveTemplate, include, exclude, prefix = "", nunjuck
       const componentSpec = await loadComponentSpec(code, id);
       const storyParameters = {
         importPath,
-        macroExport: nunjucksPrefix ? nunjucksPrefix + pascalCase(componentSpec.name) : camelCase(componentSpec.name)
+        macroExport: docsNunjucksPrefix ? docsNunjucksPrefix + pascalCase(componentSpec.name) : camelCase(componentSpec.name)
       };
       const templatePath = resolveTemplate ? path__namespace.resolve(resolveTemplate(componentSpec.name)) : `./template.njk`;
       return [
         `import render from "${templatePath}?import="`,
         `import { generateStory } from "/node_modules/storybook-addon-govuk-fixtures/dist/runtime.js"`,
         `export default {`,
-        `  title: ${JSON.stringify(path__namespace.posix.join(prefix, componentSpec.name))},`,
+        `  title: ${JSON.stringify(path__namespace.posix.join(storyNamePrefix, componentSpec.name))},`,
         `  parameters: ${JSON.stringify(storyParameters)}`,
         `}`,
         ...componentSpec.examples.flatMap(({ name, data }) => [
@@ -10344,13 +10344,13 @@ function fixtureLoader({ resolveTemplate, include, exclude, prefix = "", nunjuck
     }
   };
 }
-function fullPageExampleLoader({ storyNamespace = "", searchPath }) {
+function standaloneExampleLoader({ storyNamespace = "", searchPath }) {
   const filter = vite.createFilter([searchPath + "/*/example.yaml"], []);
   return {
     name: "vite-plugin-govuk-examples",
     async load(id) {
       if (!filter(id)) return;
-      const example = getExampleSpec(id, { searchPath, storyNamespace });
+      const example = getStandaloneExampleSpec(id, { searchPath, storyNamespace });
       const storyMeta = {
         title: example.storyTitle,
         tags: ["!autodocs"],
@@ -10361,33 +10361,33 @@ function fullPageExampleLoader({ storyNamespace = "", searchPath }) {
       return [
         ...await example.hasStyle() ? [`import ${JSON.stringify(example.stylePath)}`] : [],
         `import render from "${example.mainTemplate}?import="`,
-        `import { generateFullPageExample } from "/node_modules/storybook-addon-govuk-fixtures/dist/runtime.js"`,
+        `import { generateStandaloneExample } from "/node_modules/storybook-addon-govuk-fixtures/dist/runtime.js"`,
         "",
         `export default ${JSON.stringify(storyMeta)}`,
-        "export const DefaultExample = generateFullPageExample(render)"
+        "export const DefaultExample = generateStandaloneExample(render)"
       ].join("\n");
     }
   };
 }
 
-const viteFinal = (viteConf, { fixtures, fullPageExamples = [], additionalTemplatePaths = [] }) => {
+const viteFinal = (viteConf, { fixtures, standaloneExamples = [], additionalTemplatePaths = [] }) => {
   const nunjucksLoaderFixed = typeof nunjucksLoader === "function" ? nunjucksLoader : nunjucksLoader.default;
   viteConf.plugins ||= [];
   viteConf.plugins.unshift(
     ...fixtures.map((f) => fixtureLoader({
-      importRelativePath: f.searchPath,
+      docsImportPath: f.searchPath,
       include: [f.searchPath + "/**"],
-      prefix: f.storyNamespace,
-      nunjucksPrefix: f.nunjucksPrefix,
+      storyNamePrefix: f.storyNamespace,
+      docsNunjucksPrefix: f.nunjucksPrefix,
       resolveTemplate: f.resolveTemplate
     })),
-    ...fullPageExamples.map((ex) => fullPageExampleLoader(ex)),
+    ...standaloneExamples.map((ex) => standaloneExampleLoader(ex)),
     // Install the nunjucks template loader and configure it to bundle templates associated with our stories
     // and any additional template search paths provided.
     nunjucksLoaderFixed({
       templates: [
         ...fixtures.map((f) => f.searchPath),
-        ...fullPageExamples.map((f) => f.searchPath),
+        ...standaloneExamples.map((f) => f.searchPath),
         ...additionalTemplatePaths ?? []
       ]
     })
@@ -10401,7 +10401,7 @@ const stories = async (prev, opts) => {
     ...opts.fixtures.map(
       (f) => f.type === "yaml" ? `${path__namespace.resolve(f.searchPath)}/**/*.yaml` : `${path__namespace.resolve(f.searchPath)}/**/fixtures.json`
     ),
-    ...(opts.fullPageExamples ?? []).map((ex) => `${path__namespace.resolve(ex.searchPath)}/*/example.yaml`)
+    ...(opts.standaloneExamples ?? []).map((ex) => `${path__namespace.resolve(ex.searchPath)}/*/example.yaml`)
   ];
 };
 const experimental_indexers = async (prev, opts) => {
@@ -10409,7 +10409,7 @@ const experimental_indexers = async (prev, opts) => {
   return [
     ...indexers ?? [],
     ...opts.fixtures.map((opts2) => fixtureIndexer(opts2)),
-    ...(opts.fullPageExamples ?? []).map((ex) => fullPageExampleIndexer(ex))
+    ...(opts.standaloneExamples ?? []).map((ex) => standaloneExampleIndexer(ex))
   ];
 };
 const previewAnnotations = async (input = [], options) => {

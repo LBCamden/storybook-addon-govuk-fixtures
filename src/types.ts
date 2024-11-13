@@ -19,7 +19,7 @@ export interface Opts {
    * 
    * You can provide multiple fixture search paths in order to customise options for fixtures under different paths.
    **/
-  fullPageExamples: FullPageExample[],
+  standaloneExamples: StandaloneExample[],
 }
 
 export interface FixtureOpts {
@@ -74,7 +74,7 @@ export interface FixtureOpts {
   resolveTemplate?: (name: string) => string
 }
 
-export interface FullPageExample {
+export interface StandaloneExample {
   /**
    * Slash-delimited namespace that defines how stories are grouped in the sidebar.
    * 

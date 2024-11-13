@@ -5,14 +5,14 @@ import * as path from 'path'
 import type { InlineConfig } from 'vite'
 
 import { Opts } from './types'
-import { fixtureIndexer, fullPageExampleIndexer } from './indexer'
-import fixtureLoader, { fullPageExampleLoader } from './vite-plugin'
+import { fixtureIndexer, standaloneExampleIndexer } from './indexer'
+import fixtureLoader, { standaloneExampleLoader } from './vite-plugin'
 
 /**
  * Preset hook to override vite configuration. We use it to inject the plugins that we need to transform yaml and json
  * fixtures into Storybook CSF-format js modules.
  **/
-export const viteFinal = (viteConf: InlineConfig, { fixtures, fullPageExamples = [], additionalTemplatePaths = [] }: Opts) => {
+export const viteFinal = (viteConf: InlineConfig, { fixtures, standaloneExamples = [], additionalTemplatePaths = [] }: Opts) => {
   // workaround for loader being in esm format
   const nunjucksLoaderFixed = typeof nunjucksLoader === 'function' ? nunjucksLoader : (nunjucksLoader as any).default
 
@@ -27,15 +27,15 @@ export const viteFinal = (viteConf: InlineConfig, { fixtures, fullPageExamples =
       resolveTemplate: f.resolveTemplate
     })),
 
-      // Install a plugin for each full page example search path
-    ...fullPageExamples.map(ex => fullPageExampleLoader(ex)),
+      // Install a plugin for each standalone example search path
+    ...standaloneExamples.map(ex => standaloneExampleLoader(ex)),
 
     // Install the nunjucks template loader and configure it to bundle templates associated with our stories
     // and any additional template search paths provided.
     nunjucksLoaderFixed({
       templates: [
         ...fixtures.map(f => f.searchPath),
-        ...fullPageExamples.map(f => f.searchPath),
+        ...standaloneExamples.map(f => f.searchPath),
         ...additionalTemplatePaths ?? []
       ],
     }),
@@ -63,7 +63,7 @@ export const stories: PresetPropertyFn<"stories", StorybookConfig, Opts> = async
       // govuk-prototype-kit json format
       : `${path.resolve(f.searchPath)}/**/fixtures.json`,
     ),
-    ...(opts.fullPageExamples ?? []).map(ex => `${path.resolve(ex.searchPath)}/*/example.yaml`),
+    ...(opts.standaloneExamples ?? []).map(ex => `${path.resolve(ex.searchPath)}/*/example.yaml`),
   ]
 }
 
@@ -83,7 +83,7 @@ export const experimental_indexers: PresetPropertyFn<"experimental_indexers", St
   return [
     ...indexers ?? [],
     ...opts.fixtures.map(opts => fixtureIndexer(opts)),
-    ...(opts.fullPageExamples ?? []).map(ex => fullPageExampleIndexer(ex))
+    ...(opts.standaloneExamples ?? []).map(ex => standaloneExampleIndexer(ex))
   ]
 }
 

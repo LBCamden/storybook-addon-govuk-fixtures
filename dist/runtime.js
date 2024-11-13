@@ -77,7 +77,7 @@ function generateStory(renderFn, { name, data }) {
     ]
   };
 }
-function generateFullPageExample(renderFn) {
+function generateStandaloneExample(renderFn) {
   return {
     render: (_, { loaded }) => loaded.html,
     loaders: [
@@ -92,4 +92,4 @@ function generateFullPageExample(renderFn) {
   };
 }
 
-export { generateFullPageExample, generateStory };
+export { generateStandaloneExample, generateStory };
