@@ -2,6 +2,9 @@
 
 Storybook plugin to render nunjucks components and examples using fixtures defined in yaml and json format.
 
+> [!WARNING]  
+> This add-on is in early stage development and may be subject to breaking change.
+
 ## Installation
 
 Install the library (requires authentication with lbcamden github)
