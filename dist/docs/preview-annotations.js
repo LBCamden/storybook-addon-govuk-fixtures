@@ -12,6 +12,38 @@ function docsTransformSource(code, ctx) {
   }
 }
 
+let resizeObserver;
+function dispatchStoryResize(storyRoot) {
+  const { width, height } = storyRoot.getBoundingClientRect();
+  const storyUrl = window.location.href;
+  const message = {
+    context: "iframe.resize",
+    width: Math.ceil(width),
+    height: Math.ceil(height),
+    href: storyUrl,
+    src: storyUrl
+  };
+  window.parent.postMessage(message, "*");
+}
+function observeRenderedStory() {
+  const storyRoot = document.getElementById("storybook-root");
+  resizeObserver?.disconnect();
+  if (!storyRoot) {
+    return;
+  }
+  dispatchStoryResize(storyRoot);
+  resizeObserver = new ResizeObserver(() => {
+    dispatchStoryResize(storyRoot);
+  });
+  resizeObserver.observe(storyRoot);
+}
+const storyResizeDecorator = (Story, context) => {
+  const renderedStory = Story(context);
+  window.requestAnimationFrame(observeRenderedStory);
+  return renderedStory;
+};
+
+const decorators = [storyResizeDecorator];
 const parameters = {
   docs: {
     source: {
@@ -37,4 +69,4 @@ const initialGlobals = {
   sourceLanguage: "nunjucks"
 };
 
-export { globalTypes, initialGlobals, parameters };
+export { decorators, globalTypes, initialGlobals, parameters };
