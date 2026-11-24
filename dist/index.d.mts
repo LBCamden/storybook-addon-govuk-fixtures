@@ -112,5 +112,4 @@ declare function govukStorybook(options: Opts): {
     options: Opts;
 };
 
-export { govukStorybook as default };
-export type { ComponentSpec, FixtureOpts, FixtureSpec, Opts, StandaloneExample };
+export { type ComponentSpec, type FixtureOpts, type FixtureSpec, type Opts, type StandaloneExample, govukStorybook as default };

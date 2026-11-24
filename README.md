@@ -93,6 +93,26 @@ const config = {
 
 ## Development
 
+### Resizing embedded stories
+
+The `storybook-addon-govuk-fixtures/story-resize` export contains both the
+Storybook decorator that emits `iframe.resize` messages and the receiver used
+by sites that embed Storybook:
+
+```javascript
+import {
+  initStoryResizeReceiver
+} from "storybook-addon-govuk-fixtures/story-resize";
+
+initStoryResizeReceiver();
+```
+
+By default the receiver resizes iframes with the `data-storybook-iframe`
+attribute. It validates both the sending window and origin before applying a
+positive height.
+
+### Testing downstream projects
+
 If you're making changes to this library, you'll probably want to test it against a downstream project containing component fixtures.
 
 Use npm link to do this.
