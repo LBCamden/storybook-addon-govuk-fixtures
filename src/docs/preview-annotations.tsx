@@ -1,5 +1,11 @@
 import { GlobalTypes } from "storybook/internal/types";
 import { docsTransformSource } from "./docs-transform";
+import { storyResizeDecorator } from "../story-resize";
+
+/**
+ Decorators to apply to every generated story.
+*/
+export const decorators = [storyResizeDecorator];
 
 /**
  Additional parameters to inject into the frontend storybook context 

@@ -12,6 +12,10 @@
     "./dist/runtime.js": {
       "import": "./dist/runtime.js"
     },
+    "./story-resize": {
+      "types": "./dist/story-resize.d.mts",
+      "import": "./dist/story-resize.js"
+    },
     ".": {
       "types": "./dist/index.d.mts",
       "import": "./dist/index.js",

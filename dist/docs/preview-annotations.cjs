@@ -1,5 +1,7 @@
 'use strict';
 
+var storyResize = require('../story-resize.cjs');
+
 function docsTransformSource(code, ctx) {
   const { macroExport, importPath } = ctx.parameters;
   const sourceLanguage = ctx.globals.sourceLanguage;
@@ -14,6 +16,7 @@ function docsTransformSource(code, ctx) {
   }
 }
 
+const decorators = [storyResize.storyResizeDecorator];
 const parameters = {
   docs: {
     source: {
@@ -39,6 +42,7 @@ const initialGlobals = {
   sourceLanguage: "nunjucks"
 };
 
+exports.decorators = decorators;
 exports.globalTypes = globalTypes;
 exports.initialGlobals = initialGlobals;
 exports.parameters = parameters;

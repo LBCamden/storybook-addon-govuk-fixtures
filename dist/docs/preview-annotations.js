@@ -1,3 +1,5 @@
+import { storyResizeDecorator } from '../story-resize.js';
+
 function docsTransformSource(code, ctx) {
   const { macroExport, importPath } = ctx.parameters;
   const sourceLanguage = ctx.globals.sourceLanguage;
@@ -12,6 +14,7 @@ function docsTransformSource(code, ctx) {
   }
 }
 
+const decorators = [storyResizeDecorator];
 const parameters = {
   docs: {
     source: {
@@ -37,4 +40,4 @@ const initialGlobals = {
   sourceLanguage: "nunjucks"
 };
 
-export { globalTypes, initialGlobals, parameters };
+export { decorators, globalTypes, initialGlobals, parameters };
